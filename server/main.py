@@ -6,10 +6,10 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 #imports from local files
-from valid_timeframe import validate_timeframe
-from id_generator import IDGenerator
-from download_command import download_tweet_video
-from clip_from_download import clip_video_ffmpeg
+from include.valid_timeframe import validate_timeframe
+from include.id_generator import IDGenerator
+from include.download_command import download_tweet_video
+from include.clip_from_download import clip_video_ffmpeg
 
 # Initialize FastAPI app
 app = FastAPI()
@@ -26,7 +26,7 @@ app.add_middleware(
 )
 
 #serve the download director for file access
-DOWNLOAD_DIR = "'/tmp/downloads"
+DOWNLOAD_DIR = "/tmp/downloads"
 os.makedirs(DOWNLOAD_DIR, exist_ok=True)
 
 #Mount theh static directory so files can be accessed via URL
@@ -70,11 +70,12 @@ async def clip_video(request: Request):
         else:
             # Return full video if no clipping times provided
             target_filename = f"{request_id}.mp4"
+            
         # Step 3 : Return the download link
-        base_url = os.getenv("BASE_URL", str(request.base_url).rsplit("/"))
-        download_url = f"{base_url}/downloads/{target_filename}"
+        base_url = os.getenv("BASE_URL", str(request.base_url).rstrip("/"))
+        download_link = f"{base_url}/downloads/{target_filename}"
 
-        return JSONResponse(content={"download_url": download_url})
+        return JSONResponse(content={"download_link": download_link})
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Processing Error: {str(e)}")
