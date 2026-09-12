@@ -1,6 +1,40 @@
 import os
 import math
+import subprocess
+import asyncio
 from fastapi import HTTPException
+
+
+async def get_video_duration(video_path: str) -> float:
+    """
+    Get the duration of a video file using ffprobe.
+    Returns duration in seconds as a float.
+    """
+    command = [
+        "ffprobe",
+        "-v",
+        "error",
+        "-show_entries",
+        "format=duration",
+        "-of",
+        "default=noprint_wrappers=1:nokey=1",
+        video_path,
+    ]
+    
+    try:
+        process = await asyncio.create_subprocess_exec(
+            *command,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
+        )
+        stdout, stderr = await process.communicate()
+        
+        if process.returncode != 0:
+            raise ValueError(f"ffprobe failed: {stderr.decode()}")
+        
+        return float(stdout.decode().strip())
+    except Exception as e:
+        raise ValueError(f"Could not determine video duration: {str(e)}")
 
 
 def validate_timeframe(start_raw, end_raw):
@@ -55,3 +89,27 @@ def validate_timeframe(start_raw, end_raw):
         )
 
     return start_sec, end_sec
+
+
+async def validate_timeframe_against_video(start_sec: float, end_sec: float, video_path: str) -> None:
+    """
+    Validate that the requested clip timeframe is within the actual video duration.
+    Raises HTTPException(400) if the timeframe exceeds video duration.
+    """
+    try:
+        duration = await get_video_duration(video_path)
+    except ValueError as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+    # Add small buffer (1 second) for floating point precision
+    if end_sec > duration + 1:
+        raise HTTPException(
+            status_code=400,
+            detail=f"End time ({end_sec}s) exceeds video duration ({duration:.2f}s)",
+        )
+    
+    if start_sec > duration:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Start time ({start_sec}s) exceeds video duration ({duration:.2f}s)",
+        )
