@@ -7,6 +7,9 @@ from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware 
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
+from slowapi import SlowAPILimiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
 
 #imports from local files
 from include.valid_timeframe import validate_timeframe, validate_timeframe_against_video
@@ -23,6 +26,21 @@ logger = logging.getLogger(__name__)
 
 # Initialize FastAPI app
 app = FastAPI()
+
+# Initialize rate limiter with Redis (fallback to memory if Redis unavailable)
+REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
+try:
+    import redis
+    redis_client = redis.from_url(REDIS_URL, decode_responses=True)
+    redis_client.ping()  # Test connection
+    logger.info("Connected to Redis for rate limiting")
+    limiter = SlowAPILimiter(storage_uri=REDIS_URL, default_limits=["10 per minute"])
+except Exception as e:
+    logger.warning(f"Redis not available, using in-memory rate limiting: {str(e)}")
+    limiter = SlowAPILimiter(default_limits=["5 per minute"])
+
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # Initialize ID generator
 id_generator = IDGenerator()
@@ -57,6 +75,7 @@ async def root():
     }
 
 @app.post("/clip")
+@limiter.limit("5 per minute")
 async def clip_video(request: Request):
     body = await request.json()
     tweet_url = body.get("tweet_url", "").replace("x.com", "twitter.com")
