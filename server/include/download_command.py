@@ -21,17 +21,21 @@ async def download_tweet_video(tweet_url: str, output_path: str) -> None:
     try:
         # Use asyncio.create_subprocess_exec for non-blocking execution
         process = await asyncio.create_subprocess_exec(
-            *command,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE
+            *command, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
         )
         stdout, stderr = await process.communicate()
-        
+
         if process.returncode != 0:
-            raise subprocess.CalledProcessError(process.returncode, command, stdout, stderr)
-        
+            raise subprocess.CalledProcessError(
+                process.returncode, command, stdout, stderr
+            )
+
     except subprocess.CalledProcessError as e:
         error_msg = e.stderr.decode() if e.stderr else str(e)
-        raise HTTPException(status_code=500, detail=f"Error downloading video: {error_msg}")
+        raise HTTPException(
+            status_code=500, detail=f"Error downloading video: {error_msg}"
+        )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error downloading video: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error downloading video: {str(e)}"
+        )

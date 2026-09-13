@@ -274,7 +274,7 @@ export default function VideoClipperForm() {
           {/* Info Box */}
           <div className="mt-6 p-4 bg-blue-50 border-2 border-blue-100 rounded-2xl">
             <p className="text-sm text-blue-700">
-              💡 Tip: The download will save to your browser's default download folder. 
+              💡 Tip: The download will save to your browser&apos;s default download folder. 
               You can change this in your browser settings.
             </p>
           </div>

@@ -1,0 +1,84 @@
+version: '3.8'
+
+services:
+  # Redis service for caching and rate limiting
+  redis:
+    image: redis:7-alpine
+    container_name: clip-it-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - clip-it-network
+
+  # Backend API service
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: clip-it-server
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+      - DOWNLOAD_DIR=/app/downloads
+      - DOWNLOAD_TTL_SECONDS=3600
+      - ALLOWED_ORIGINS=http://localhost:3000,http://client:3000
+      - BASE_URL=http://localhost:8080
+      - MAX_CLIP_SECONDS=600
+      - MAX_TIMECODE_SECONDS=86400
+      - REDIS_URL=redis://redis:6379
+    volumes:
+      - server_downloads:/app/downloads
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - clip-it-network
+
+  # Frontend Next.js service
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: clip-it-client
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8080
+      - NODE_ENV=production
+    depends_on:
+      - server
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - clip-it-network
+
+volumes:
+  redis_data:
+    driver: local
+  server_downloads:
+    driver: local
+
+networks:
+  clip-it-network:
+    driver: bridge
