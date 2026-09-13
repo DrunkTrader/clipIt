@@ -1,52 +1,52 @@
 ```
 # Dependencies
 node_modules/
-venv/
-.venv/
-__pycache__/
-.mypy_cache/
-.pytest_cache/
-dist/
-build/
-target/
-.gradle/
 
 # Environment
 .env
 .env.local
-*.env.*
+.env.*
 
-# Editors
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# Logs and temp files
+# Logs
 *.log
-*.tmp
-
-# System files
-.DS_Store
-Thumbs.db
-
-# Compiled files
-*.pyc
-*.class
-*.o
-*.exe
-*.dll
-*.so
-*.a
-*.obj
-*.out
 
 # Coverage
 coverage/
 htmlcov/
 .coverage
 
-# Compressed files
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+venv/
+.venv/
+.env/
+.pytest_cache/
+.mypy_cache/
+
+# Build outputs
+dist/
+build/
+*.min.js
+*.min.css
+*.bundle.js
+
+# Temporary files
+*.tmp
+*.temp
+.DS_Store
+Thumbs.db
+
+# Compression
 *.zip
 *.gz
 *.tar
