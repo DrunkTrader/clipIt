@@ -20,18 +20,16 @@ async def get_video_duration(video_path: str) -> float:
         "default=noprint_wrappers=1:nokey=1",
         video_path,
     ]
-    
+
     try:
         process = await asyncio.create_subprocess_exec(
-            *command,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE
+            *command, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
         )
         stdout, stderr = await process.communicate()
-        
+
         if process.returncode != 0:
             raise ValueError(f"ffprobe failed: {stderr.decode()}")
-        
+
         return float(stdout.decode().strip())
     except Exception as e:
         raise ValueError(f"Could not determine video duration: {str(e)}")
@@ -52,23 +50,32 @@ def validate_timeframe(start_raw, end_raw):
     # If both are None, return None to indicate full video download
     if start_raw is None and end_raw is None:
         return None, None
-    
+
     # If only one is provided, raise an error
     if start_raw is None or end_raw is None:
-        raise HTTPException(status_code=400, detail="Both start and end must be provided, or leave both empty for full video")
+        raise HTTPException(
+            status_code=400,
+            detail="Both start and end must be provided, or leave both empty for full video",
+        )
 
     try:
         start_sec = float(start_raw)
         end_sec = float(end_raw)
 
     except (TypeError, ValueError):
-        raise HTTPException(status_code=400, detail="start and end must be numeric seconds")
+        raise HTTPException(
+            status_code=400, detail="start and end must be numeric seconds"
+        )
 
     if not math.isfinite(start_sec) or not math.isfinite(end_sec):
-        raise HTTPException(status_code=400, detail="start and end must be finite numbers")
+        raise HTTPException(
+            status_code=400, detail="start and end must be finite numbers"
+        )
 
     if start_sec < 0 or end_sec <= 0:
-        raise HTTPException(status_code=400, detail="start must be >= 0 and end must be > 0")
+        raise HTTPException(
+            status_code=400, detail="start must be >= 0 and end must be > 0"
+        )
 
     if end_sec <= start_sec:
         raise HTTPException(status_code=400, detail="end must be greater than start")
@@ -91,7 +98,9 @@ def validate_timeframe(start_raw, end_raw):
     return start_sec, end_sec
 
 
-async def validate_timeframe_against_video(start_sec: float, end_sec: float, video_path: str) -> None:
+async def validate_timeframe_against_video(
+    start_sec: float, end_sec: float, video_path: str
+) -> None:
     """
     Validate that the requested clip timeframe is within the actual video duration.
     Raises HTTPException(400) if the timeframe exceeds video duration.
@@ -100,14 +109,14 @@ async def validate_timeframe_against_video(start_sec: float, end_sec: float, vid
         duration = await get_video_duration(video_path)
     except ValueError as e:
         raise HTTPException(status_code=500, detail=str(e))
-    
+
     # Add small buffer (1 second) for floating point precision
     if end_sec > duration + 1:
         raise HTTPException(
             status_code=400,
             detail=f"End time ({end_sec}s) exceeds video duration ({duration:.2f}s)",
         )
-    
+
     if start_sec > duration:
         raise HTTPException(
             status_code=400,

@@ -17,5 +17,5 @@ class IDGenerator:
             else:
                 self.last_timestamp = current_timestamp
                 self.counter = 0
-                
+
             return f"{current_timestamp}{self.counter:04d}"
