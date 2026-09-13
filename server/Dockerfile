@@ -24,7 +24,9 @@ ENV PORT=8080
 ENV DOWNLOAD_DIR=/app/downloads
 ENV DOWNLOAD_TTL_SECONDS=3600
 ENV ALLOWED_ORIGINS=http://localhost:3000
+ENV PYTHONUNBUFFERED=1
 
 EXPOSE 8080
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
+# Use gunicorn with uvicorn workers for production
+CMD ["gunicorn", "main:app", "--workers", "4", "--worker-class", "uvicorn.workers.UvicornWorker", "--bind", "0.0.0.0:8080", "--timeout", "120", "--keep-alive", "5"]

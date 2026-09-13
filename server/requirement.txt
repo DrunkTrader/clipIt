@@ -4,3 +4,4 @@ yt-dlp==2024.3.10
 python-multipart==0.0.6
 slowapi==0.1.8
 redis==5.0.1
+gunicorn==21.2.0
