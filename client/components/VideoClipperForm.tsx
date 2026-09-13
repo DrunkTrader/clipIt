@@ -54,7 +54,7 @@ export default function VideoClipperForm() {
       }
 
       // Make API request
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:9000'
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
       const response = await axios.post<ClipResponse>(`${apiUrl}/clip`, requestBody)
 
       setDownloadLink(response.data.download_link)

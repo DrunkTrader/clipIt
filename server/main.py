@@ -7,7 +7,7 @@ from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
-from slowapi import SlowAPILimiter, _rate_limit_exceeded_handler
+from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 
@@ -34,10 +34,10 @@ try:
     redis_client = redis.from_url(REDIS_URL, decode_responses=True)
     redis_client.ping()  # Test connection
     logger.info("Connected to Redis for rate limiting")
-    limiter = SlowAPILimiter(storage_uri=REDIS_URL, default_limits=["10 per minute"])
+    limiter = Limiter(key_func=get_remote_address, storage_uri=REDIS_URL, default_limits=["10 per minute"])
 except Exception as e:
     logger.warning(f"Redis not available, using in-memory rate limiting: {str(e)}")
-    limiter = SlowAPILimiter(default_limits=["5 per minute"])
+    limiter = Limiter(key_func=get_remote_address, default_limits=["5 per minute"])
 
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
@@ -74,6 +74,11 @@ async def root():
         "endpoints": "Available endpoints: /clip (POST), /downloads/ (GET)",
         "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime()),
     }
+
+
+@app.get("/health")
+async def health():
+    return {"status": "healthy"}
 
 
 @app.post("/clip")
